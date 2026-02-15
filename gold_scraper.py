@@ -7,40 +7,49 @@ def send_telegram(message):
     chat_id = os.getenv('TELEGRAM_CHAT_ID')
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
-    r = requests.post(url, data=payload)
-    print(f"Telegram Response: {r.text}") # This shows in GitHub logs
+    requests.post(url, data=payload)
 
-def get_kerala_rate():
+def clean_price(text):
+    # Extracts only the digits from a string like "₹ 14460"
+    return int(''.join(filter(str.isdigit, text)))
+
+def get_rates():
     try:
-        # Source 1: AKGSMA
         url = "https://akgsma.com/"
-        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Look for any text that looks like a price near "22K"
-        # We search for the text and then find the next element containing the ₹ symbol
-        target = soup.find(string=lambda x: x and "22K" in x and "1gm" in x)
-        if target:
-            rate = target.find_next(string=lambda x: "₹" in x or (x and x.strip().isdigit()))
-            return rate.strip()
-        return None
+        # Finding the rates based on the website structure
+        rate_22k_text = soup.find(string=lambda x: x and "22K916" in x).split('-')[1].strip()
+        rate_18k_text = soup.find(string=lambda x: x and "18K750" in x).split('-')[1].strip()
+        
+        # Clean and calculate
+        price_22k_1g = clean_price(rate_22k_text)
+        price_18k_1g = clean_price(rate_18k_text)
+        
+        return {
+            "22k_1g": price_22k_1g,
+            "22k_8g": price_22k_1g * 8,
+            "18k_1g": price_18k_1g,
+            "18k_8g": price_18k_1g * 8
+        }
     except Exception as e:
-        print(f"Scraping error: {e}")
+        print(f"Error: {e}")
         return None
 
-current_rate = get_kerala_rate()
+data = get_rates()
 
-if current_rate:
-    # Calculation for 1 Pavan (8 grams)
-    # Remove ₹ and commas to do math
-    clean_rate = ''.join(filter(str.isdigit, current_rate))
-    pavan_rate = int(clean_rate) * 8
-    
-    msg = (f"✨ *Kerala Gold Rate Today*\n\n"
-           f"💰 *22K (1gm):* {current_rate}\n"
-           f"🪙 *22K (8gm/Pavan):* ₹{pavan_rate:,}\n\n"
-           f"📍 Source: AKGSMA")
+if data:
+    msg = (
+        f"✨ *Kerala Gold Rate Today*\n\n"
+        f"🟡 *22K Gold (916)*\n"
+        f"• 1 gram: ₹{data['22k_1g']:,}\n"
+        f"• 8 gram: ₹{data['22k_8g']:,}\n\n"
+        f"🟠 *18K Gold (750)*\n"
+        f"• 1 gram: ₹{data['18k_1g']:,}\n"
+        f"• 8 gram: ₹{data['18k_8g']:,}\n\n"
+        f"📍 Source: AKGSMA"
+    )
     send_telegram(msg)
 else:
-    # If it fails, send an error to your Telegram so you know!
-    send_telegram("❌ Gold scraper failed to find the price today. Please check the website layout.")
+    send_telegram("❌ Failed to fetch gold rates. Check the AKGSMA website.")
