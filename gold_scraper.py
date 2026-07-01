@@ -21,17 +21,13 @@ def get_rates():
         
         # Finding the rates based on the website structure
         rate_22k_text = soup.find(string=lambda x: x and "22K916" in x).split('-')[1].strip()
-        rate_18k_text = soup.find(string=lambda x: x and "18K750" in x).split('-')[1].strip()
         
         # Clean and calculate
         price_22k_1g = clean_price(rate_22k_text)
-        price_18k_1g = clean_price(rate_18k_text)
         
         return {
             "22k_1g": price_22k_1g,
             "22k_8g": price_22k_1g * 8,
-            "18k_1g": price_18k_1g,
-            "18k_8g": price_18k_1g * 8
         }
     except Exception as e:
         print(f"Error: {e}")
@@ -45,9 +41,6 @@ if data:
         f"🟡 *22K Gold (916)*\n"
         f"• 1 gram: ₹{data['22k_1g']:,}\n"
         f"• 8 gram: ₹{data['22k_8g']:,}\n\n"
-        f"🟠 *18K Gold (750)*\n"
-        f"• 1 gram: ₹{data['18k_1g']:,}\n"
-        f"• 8 gram: ₹{data['18k_8g']:,}\n\n"
         f"📍 Source: AKGSMA"
     )
     send_telegram(msg)
