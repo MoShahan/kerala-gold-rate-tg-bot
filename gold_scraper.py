@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 import os
 
 def send_telegram(message):
@@ -36,8 +37,10 @@ def get_rates():
 data = get_rates()
 
 if data:
+    today_date = datetime.now().strftime("%d/%m/%Y")
+    
     msg = (
-        f"✨ *Kerala Gold Rate Today*\n\n"
+        f"✨ *Kerala Gold Rate - ({today_date})*\n\n"
         f"🟡 *22K Gold (916)*\n"
         f"• 1 gram: ₹{data['22k_1g']:,}\n"
         f"• 8 gram: ₹{data['22k_8g']:,}\n\n"
